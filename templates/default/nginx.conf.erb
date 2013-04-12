@@ -1,7 +1,7 @@
 server {
   listen   443;
   ssl on;
-  ssl_certificate /var/ssl/<%= node[:identifies][:servername] %>.crt;
+  ssl_certificate /var/ssl/unified_<%= node[:identifies][:servername] %>.crt;
   ssl_certificate_key /var/ssl/<%= node[:identifies][:servername] %>.key;
 
   server_name <%= node[:identifies][:servername] %>;
@@ -9,8 +9,12 @@ server {
   access_log  /var/log/nginx/localhost.access.log;
 
   location / {
-    root   /var/www/<%= node[:identifies][:servername] %>;
+    root   /var/www/<%= node[:identifies][:servername] %>/static;
     index  index.html;
+
+    location /.well-known/browserid {
+      default_type "application/json";
+    }
   }
 }
 

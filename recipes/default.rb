@@ -34,17 +34,18 @@ remote_directory "/var/ssl" do
   source "ssl"
   # seems like there should be a better way
   files_owner node['nginx']['user']
-  files_group node[:identifies][:group]
-  files_mode 0440
+  files_group node['nginx']['group']
+  files_mode 0400
   owner node['nginx']['user']
-  group node[:identifies][:group]
-  mode 0550
+  owner node['nginx']['group']
+  mode 0500
 end
 
 # create identifi.es config
 template "#{node[:nginx][:dir]}/sites-available/#{node[:identifies][:servername]}.conf" do
   source "nginx.conf.erb"
   mode 0644
+  notifies :reload, 'service[nginx]'
 end
 
 remote_directory "/var/www/#{node[:identifies][:servername]}" do
