@@ -17,6 +17,8 @@ end
 
 include_recipe "apt"
 
+include_recipe "fail2ban"
+
 include_recipe "nginx"
 
 # disable default site
