@@ -15,7 +15,7 @@ include_recipe "fail2ban"
 include_recipe "nginx"
 include_recipe "python"
 include_recipe "gunicorn"
-include_recipe "supervisord"
+include_recipe "supervisor"
 
 
 # setup user and group
@@ -88,11 +88,12 @@ python_pip "flask" do
 end
 
 
-# supervisord setup, start the actual webapp
-supervisord_program "gunicorn_app_app" do
+# supervisor setup, start the actual webapp
+supervisor_service "gunicorn_app_app" do
   command "gunicorn app:app"
   directory "/var/www/#{node[:identifies][:servername]}/app"
   user node[:identifies][:user]
   autostart true
-  action [:supervise, :start]
+  autorestart true
+  action [:enable, :start]
 end
