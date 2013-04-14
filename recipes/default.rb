@@ -8,9 +8,14 @@
 #
 
 include_recipe "apt"
-include_recipe "fail2ban"
+
 include_recipe "ntp"
+include_recipe "fail2ban"
+
 include_recipe "nginx"
+include_recipe "python"
+include_recipe "gunicorn"
+include_recipe "supervisord"
 
 
 # setup user and group
@@ -66,4 +71,28 @@ end
 nginx_site "#{node[:identifies][:servername]}.conf" do
   enable true
   notifies :restart, 'service[nginx]'
+end
+
+
+# gunicorn setup
+# create a config with the default values
+gunicorn_config "/etc/gunicorn/#{node[:identifies][:servername]}.py" do
+  listen "127.0.0.1:8000"
+  action :create
+end
+
+
+# flask setup
+python_pip "flask" do
+  action :install
+end
+
+
+# supervisord setup, start the actual webapp
+supervisord_program "gunicorn_app_app" do
+  command "gunicorn app:app"
+  directory "/var/www/#{node[:identifies][:servername]}/app"
+  user node[:identifies][:user]
+  autostart true
+  action [:supervise, :start]
 end
