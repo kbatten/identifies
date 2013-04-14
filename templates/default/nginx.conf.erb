@@ -18,31 +18,3 @@ server {
     }
   }
 }
-
-# https://test.<%= node[:identifies][:servername] %>
-server {
-  listen 443;
-  ssl on;
-  ssl_certificate /var/ssl/unified_<%= node[:identifies][:servername] %>.crt;
-  ssl_certificate_key /var/ssl/<%= node[:identifies][:servername] %>.key;
-
-  server_name test.<%= node[:identifies][:servername] %>;
-
-  access_log  /var/log/nginx/test.<%= node[:identifies][:servername] %>.access.log;
-
-#  location / {
-#    root   /var/www/<%= node[:identifies][:servername] %>/static;
-#    index  index.html;
-
-#    location /.well-known/browserid {
-#      default_type "application/json";
-#    }
-#  }
-}
-
-# http://<%= node[:identifies][:servername] %> -> https://<%= node[:identifies][:servername] %>
-server {
-  listen 80;
-  server_name <%= node[:identifies][:servername] %>;
-  rewrite ^/(.*) https://<%= node[:identifies][:servername] %>/$1 permanent;
-}

@@ -7,6 +7,13 @@
 # All rights reserved - Do Not Redistribute
 #
 
+include_recipe "apt"
+include_recipe "fail2ban"
+include_recipe "ntp"
+include_recipe "nginx"
+
+
+# setup user and group
 group node[:identifies][:group]
 
 user node[:identifies][:user] do
@@ -15,12 +22,8 @@ user node[:identifies][:user] do
   shell "/bin/bash"
 end
 
-include_recipe "apt"
-include_recipe "fail2ban"
-include_recipe "ntp"
-include_recipe "nginx"
 
-# disable default site
+# nginx setup
 nginx_site "000-default" do
   enable false
   notifies :restart, 'service[nginx]'
@@ -59,6 +62,7 @@ remote_directory "/var/www/#{node[:identifies][:servername]}" do
   mode 0755
 end
 
+# enable site
 nginx_site "#{node[:identifies][:servername]}.conf" do
   enable true
   notifies :restart, 'service[nginx]'
