@@ -7,10 +7,12 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
 
-@app.route('/browserid/sign_in.html')
-def sign_in():
-    return render_template_string('<h1>signin</h1>')
+@app.route('/api/<cmd>', methods=['GET'])
+def api_get(cmd):
+    if cmd == "whoami":
+        return "stan+southpark@identifi.es"
 
-@app.route('/browserid/provision.html')
-def provision():
-    return render_template_string('<h1>provision</h1>')
+@app.route('/api/<cmd>', methods=['POST'])
+def api_post(cmd):
+    if cmd == "cert_key":
+        return
