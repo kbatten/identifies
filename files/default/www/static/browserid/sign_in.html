@@ -5,19 +5,25 @@
 <script src="https://login.persona.org/authentication_api.js"></script>
 <script type="text/javascript" src="/jquery.js"></script>
 <script type="text/javascript">
+/*jslint browser: true */
+/*global navigator */
+
 function activeSessionFor(email) {
-  return true;
+    'use strict';
+    return true;
 }
 
 function displayLoginForm() {
+    'use strict';
 }
 
-navigator.id.beginAuthentication(function(email) {
-  if (activeSessionFor(email)) {
-    navigator.id.completeAuthentication();
-  } else {
-    displayLoginForm();
-  }
+navigator.id.beginAuthentication(function (email) {
+    'use strict';
+    if (activeSessionFor(email)) {
+        navigator.id.completeAuthentication();
+    } else {
+        displayLoginForm();
+    }
 });
 </script>
 </head>
