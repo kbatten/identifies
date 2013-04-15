@@ -1,5 +1,5 @@
 '''
-identifi.es flask app for the api
+identifi.es flask app
 '''
 
 
@@ -80,7 +80,7 @@ ISSUER = 'identifi.es'
 
 
 @app.route('/api/whoami', methods=['GET'])
-def whoami():
+def api_whoami():
     '''
     get current session userid
     '''
@@ -91,8 +91,8 @@ def whoami():
     return userid
 
 
-@app.route('/api/cert_key', methods=['POST'])
-def cert_key():
+@app.route('/api/certkey', methods=['POST'])
+def api_certkey():
     '''
     certify the key by signing it with our private key
     '''
@@ -127,7 +127,7 @@ def cert_key():
 
 
 @app.route('/api/loginasstan', methods=['GET', 'POST'])
-def loginasstan():
+def api_loginasstan():
     '''
     log in as test user
 
@@ -138,7 +138,7 @@ def loginasstan():
 
 
 @app.route('/api/logout', methods=['GET', 'POST'])
-def logout():
+def api_logout():
     '''
     log out of session
 

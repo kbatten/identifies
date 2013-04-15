@@ -34,8 +34,8 @@ navigator.id.beginProvisioning(function (userid, cert_duration) {
                 $.post('/api/log', {'log': '<provision> pubkey: ' + pubkey});
                 // finally, once we have a public key from the browser, we'll certify it, and
                 // go pass it back
-                $.post('/api/cert_key', {pubkey: pubkey,
-                                         duration: cert_duration})
+                $.post('/api/certkey', {pubkey: pubkey,
+                                        duration: cert_duration})
                     .success(function (r) {
                         // all done! woo!
                         navigator.id.registerCertificate(r.cert);
