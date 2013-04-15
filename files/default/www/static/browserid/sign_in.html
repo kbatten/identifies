@@ -11,18 +11,13 @@
 navigator.id.beginAuthentication(function (userid) {
     'use strict';
 
-    $.post('/api/log', {'log': '<sign_in> userid: ' + userid});
-
     $.get('/api/whoami')
         .success(function (who) {
-            if (userid === who) {
-                $.post('/api/log', {'log': '<sign_in> already logged in ' + userid});
+            if (userid === who.userid) {
                 navigator.id.completeAuthentication();
             } else {
-                $.post('/api/log', {'log': '<sign_in> user not logged in ' + userid + ' !== ' + who });
                 $.post('/api/loginasstan')
                     .success(function () {
-                        $.post('/api/log', {'log': '<sign_in> logging in as stan'});
                         navigator.id.completeAuthentication();
                     });
             }

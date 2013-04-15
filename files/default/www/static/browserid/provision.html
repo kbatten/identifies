@@ -16,22 +16,17 @@
 navigator.id.beginProvisioning(function (userid, cert_duration) {
     'use strict';
 
-    // test out logging functionality
-    $.post('/api/log', {'log': '<provision> userid: ' + userid + ', cert_duration: ' + cert_duration});
-
     // now we have the email address that wishes to be provisioned!
     // is he authenticated to eyedee.me?
     $.get('/api/whoami')
         .success(function (who) {
-            $.post('/api/log', {'log': '<provision> who: ' + who});
-            if (userid !== who) {
+            if (userid !== who.userid) {
                 return navigator.id.raiseProvisioningFailure('not authed');
             }
 
             // Awesome! The user is authenticated as who we want to provision. let's
             // generate a keypair
             navigator.id.genKeyPair(function (pubkey) {
-                $.post('/api/log', {'log': '<provision> pubkey: ' + pubkey});
                 // finally, once we have a public key from the browser, we'll certify it, and
                 // go pass it back
                 $.post('/api/certkey', {pubkey: pubkey,

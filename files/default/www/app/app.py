@@ -4,15 +4,17 @@ identifi.es flask app
 
 
 import json
-import base64
 import time
 import logging
 
+from binascii import hexlify
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+
 from Crypto.PublicKey import DSA, RSA
 from Crypto.Signature import PKCS1_v1_5
-from Crypto.Hash import SHA
+from Crypto.Hash import SHA256
 
-from flask import Flask, session, request
+from flask import Flask, session, request, jsonify
 from werkzeug.contrib.fixers import ProxyFix
 
 
@@ -23,17 +25,18 @@ def sign(payload, secret_key):
     '''
     if 'n' in secret_key.keydata:
         # RSA
-        header = {'algorithm': 'RS'}
-    elif 'q' in secret_key.keydata:
-        # DSA
-        header = {'algorithm': 'DS'}
-    alg_bytes = base64.urlsafe_b64encode(json.dumps(header))
-    json_bytes = base64.urlsafe_b64encode(json.dumps(payload))
+        header = {'alg': 'RS256'}
+    else:
+        return
+    header_string = ''.join(json.dumps(header).split(' '))
+    alg_bytes = urlsafe_b64encode(header_string).strip('=')
+    payload_string = ''.join(json.dumps(payload).split(' '))
+    json_bytes = urlsafe_b64encode(payload_string).strip('=')
 
     signer = PKCS1_v1_5.new(secret_key)
-    data_hash = SHA.new(alg_bytes + '.' + json_bytes)
+    data_hash = SHA256.new(alg_bytes + '.' + json_bytes)
     signature = signer.sign(data_hash)
-    signature_bytes = base64.urlsafe_b64encode(signature)
+    signature_bytes = urlsafe_b64encode(signature).strip('=')
 
     return alg_bytes + '.' + json_bytes + '.' + signature_bytes
 
@@ -64,7 +67,7 @@ def load_json_key(key_json, base):
 app = Flask(__name__)
 # pylint: enable-msg=C0103
 app.wsgi_app = ProxyFix(app.wsgi_app)
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 # 192 bit key file for session
 with open('session.key') as session_keyfile:
@@ -87,8 +90,8 @@ def api_whoami():
     userid = ''
     if 'userid' in session:
         userid = session['userid']
-    app.logger.debug('/api/whoami -> "%s"' % userid)
-    return userid
+    app.logger.debug('/api/whoami --> "%s"' % {'userid': userid})
+    return jsonify({'userid': userid})
 
 
 @app.route('/api/certkey', methods=['POST'])
@@ -96,22 +99,21 @@ def api_certkey():
     '''
     certify the key by signing it with our private key
     '''
-    certificate = {}
-    app.logger.debug(request.headers)
-    app.logger.debug('/api/cert_key <- "%s"' % request.form)
+    certificate = ''
+    app.logger.debug('/api/cert_key <-- "%s"' % request.form)
     if 'pubkey' in request.form and \
             'duration' in request.form and \
             'userid' in session:
         userid = session['userid']
         pubkey = json.loads(request.form['pubkey'])
-        issued_at = int(time.time())
-        expires_at = issued_at + int(request.form['duration'])
+        # certificate time is in ms
+        issued_at = int(time.time() * 1000)
+        expires_at = issued_at + int(request.form['duration']) * 1000
         claim = {'public-key': pubkey,
                  'principal': {'email': userid},
-                 'issuer': ISSUER,
-                 'issuedat': issued_at,
-                 'expiresat': expires_at}
-        app.logger.debug(claim)
+                 'iss': ISSUER,
+                 'iat': issued_at,
+                 'exp': expires_at}
         certificate = sign(claim, BROWSERID_PRIVATEKEY)
     else:
         app.logger.warning('invalid request')
@@ -122,39 +124,33 @@ def api_certkey():
             app.logger.debug('missing duration')
         if not 'userid' in session:
             app.logger.debug('missing userid')
-    app.logger.debug('/api/cert_key -> "%s"' % certificate)
-    return certificate
+    cert_parts = certificate.split('.')
+    if len(cert_parts) == 3:
+        app.logger.debug('/api/cert_key <-> "%s"' %
+                         urlsafe_b64decode(cert_parts[0] + '=='))
+        app.logger.debug('/api/cert_key <-> "%s"' %
+                         urlsafe_b64decode(cert_parts[1] + '=='))
+        app.logger.debug('/api/cert_key <-> "%s"' %
+                         hexlify(urlsafe_b64decode(cert_parts[2] + '==')))
+    app.logger.debug('/api/cert_key --> "%s"' % {'cert': certificate})
+    return jsonify({'cert': certificate})
 
 
-@app.route('/api/loginasstan', methods=['GET', 'POST'])
+@app.route('/api/loginasstan', methods=['POST'])
 def api_loginasstan():
     '''
     log in as test user
-
-    GET and POST so its easy to call from a webbrowser
     '''
     session['userid'] = 'stan_southpark@' + ISSUER
     return ''
 
 
-@app.route('/api/logout', methods=['GET', 'POST'])
+@app.route('/api/logout', methods=['POST'])
 def api_logout():
     '''
     log out of session
-
-    GET and POST so its easy to call from a webbrowser
     '''
     session.pop('userid', None)
-    return ''
-
-
-@app.route('/api/log', methods=['POST'])
-def log():
-    '''
-    server side log
-    '''
-    if 'log' in request.form:
-        app.logger.debug('<remote> ' + request.form['log'])
     return ''
 
 
