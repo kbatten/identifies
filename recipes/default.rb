@@ -87,6 +87,11 @@ python_pip "flask" do
   action :install
 end
 
+# pycrypto setup
+python_pip "pycrypto" do
+  action :install
+end
+
 
 # supervisor setup, start the actual webapp
 supervisor_service "gunicorn_app_app" do

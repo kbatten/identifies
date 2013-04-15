@@ -6,25 +6,31 @@
 <script type="text/javascript" src="/jquery.js"></script>
 <script type="text/javascript">
 /*jslint browser: true */
-/*global navigator */
+/*global navigator, $ */
 
-function activeSessionFor(email) {
+navigator.id.beginAuthentication(function (userid) {
     'use strict';
-    return true;
-}
 
-function displayLoginForm() {
-    'use strict';
-}
+    $.post('/api/log', {'log': '<sign_in> userid: ' + userid});
 
-navigator.id.beginAuthentication(function (email) {
-    'use strict';
-    if (activeSessionFor(email)) {
-        navigator.id.completeAuthentication();
-    } else {
-        displayLoginForm();
-    }
+    $.get('/api/whoami')
+        .success(function (who) {
+            if (userid === who) {
+                $.post('/api/log', {'log': '<sign_in> already logged in ' + userid});
+                navigator.id.completeAuthentication();
+            } else {
+                $.post('/api/log', {'log': '<sign_in> user not logged in ' + userid + ' !== ' + who });
+                $.post('/api/loginasstan')
+                    .success(function () {
+                        $.post('/api/log', {'log': '<sign_in> logging in as stan'});
+                        navigator.id.completeAuthentication();
+                    });
+            }
+        });
 });
 </script>
 </head>
+<body>
+sign_in
+</body>
 </html>
