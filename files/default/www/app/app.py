@@ -100,7 +100,7 @@ def api_certkey():
     certify the key by signing it with our private key
     '''
     certificate = ''
-    app.logger.debug('/api/cert_key <-- "%s"' % request.form)
+    app.logger.debug('/api/certkey <-- "%s"' % request.form)
     if 'pubkey' in request.form and \
             'duration' in request.form and \
             'userid' in session:
@@ -126,13 +126,13 @@ def api_certkey():
             app.logger.debug('missing userid')
     cert_parts = certificate.split('.')
     if len(cert_parts) == 3:
-        app.logger.debug('/api/cert_key <-> "%s"' %
+        app.logger.debug('/api/certkey <-> "%s"' %
                          urlsafe_b64decode(cert_parts[0] + '=='))
-        app.logger.debug('/api/cert_key <-> "%s"' %
+        app.logger.debug('/api/certkey <-> "%s"' %
                          urlsafe_b64decode(cert_parts[1] + '=='))
-        app.logger.debug('/api/cert_key <-> "%s"' %
+        app.logger.debug('/api/certkey <-> "%s"' %
                          hexlify(urlsafe_b64decode(cert_parts[2] + '==')))
-    app.logger.debug('/api/cert_key --> "%s"' % {'cert': certificate})
+    app.logger.debug('/api/certkey --> "%s"' % {'cert': certificate})
     return jsonify({'cert': certificate})
 
 
