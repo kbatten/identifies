@@ -14,7 +14,7 @@ from Crypto.PublicKey import DSA, RSA
 from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 
-from flask import Flask, session, request, jsonify
+from flask import Flask, session, request, jsonify, escape
 from werkzeug.contrib.fixers import ProxyFix
 
 
@@ -89,7 +89,7 @@ def api_whoami():
     '''
     userid = ''
     if 'userid' in session:
-        userid = session['userid']
+        userid = escape(session['userid'])
     app.logger.debug('/api/whoami --> "%s"' % {'userid': userid})
     return jsonify({'userid': userid})
 
@@ -104,7 +104,7 @@ def api_certkey():
     if 'pubkey' in request.form and \
             'duration' in request.form and \
             'userid' in session:
-        userid = session['userid']
+        userid = escape(session['userid'])
         pubkey = json.loads(request.form['pubkey'])
         # certificate time is in ms
         issued_at = int(time.time() * 1000)
@@ -145,7 +145,7 @@ def api_loginasstan():
     return ''
 
 
-@app.route('/api/logout', methods=['POST'])
+@app.route('/api/logout', methods=['GET', 'POST'])
 def api_logout():
     '''
     log out of session
