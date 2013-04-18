@@ -73,6 +73,19 @@ def getrandbits_str(k):
     return hex_bits.decode('hex')
 
 
+###############################
+# TOQU: save this stuff to a DB
+app.users = {}
+try:
+    with open('users.json') as users_jsonfile:
+        app.users = json.loads(users_jsonfile.read())
+except IOError:
+    pass
+except ValueError:
+    pass
+###############################
+
+
 def get_user(email):
     '''
     retrieve a user dict based on an email
@@ -80,24 +93,39 @@ def get_user(email):
     if not email:
         return False
     userid = email.split('@')[0].split('+')[0]
-    user = {'userid': userid, 'email': email}
 
-    app.logger.debug(user)
+    user = {}
+    if userid in app.users:
+        user = {'userid': userid, 'email': email}
+        user.update(app.users[userid])
+    return user
 
-    if userid == 'stan':
-        user.update({'salt': getrandbits_str(256)})
-        user.update({'passhash': SHA256.new(user['salt'] +
-                                            'w'.encode('utf-8'))})
-    elif userid == 'kyle':
-        user.update({'salt': getrandbits_str(256)})
-        user.update({'passhash': SHA256.new(user['salt'] +
-                                            '1234'.encode('utf-8'))})
-    elif userid == 'cartman':
-        user.update({'salt': getrandbits_str(256)})
-        user.update({'passhash': SHA256.new(user['salt'] +
-                                            'q'.encode('utf-8'))})
-    else:
-        user = {}
+
+def create_user(email, password):
+    '''
+    create a new user
+    '''
+    if not email:
+        return False
+    userid = email.split('@')[0].split('+')[0]
+
+    salt = getrandbits_str(256).encode('string_escape')
+    salt_encode = urlsafe_b64encode(salt).encode('ascii')
+    passhash = SHA256.new(salt + password).digest()
+    passhash_encode = urlsafe_b64encode(passhash).encode('ascii')
+    app.users[userid] = {'salt': salt_encode, 'passhash': passhash_encode}
+
+    user = {
+        'salt': salt_encode,
+        'passhash': passhash_encode,
+        'email': email,
+        'userid': userid}
+
+###############################
+# TOQU: save this stuff to a DB
+    with open('users.json', 'w+') as users_jsonfile_w:
+        users_jsonfile_w.write(json.dumps(app.users))
+###############################
 
     return user
 
@@ -112,10 +140,11 @@ def verify_or_create_user(email, password):
 
     user = get_user(email)
     if not user:
-        return False
+        user = create_user(email, password)
 
-    pw1_hash = user['passhash'].digest()
-    pw2_hash = SHA256.new(user['salt'] + password.encode('utf-8')).digest()
+    salt = urlsafe_b64decode(user['salt'].encode('ascii'))
+    pw1_hash = urlsafe_b64decode(user['passhash'].encode('ascii'))
+    pw2_hash = SHA256.new(salt + password).digest()
 
     return pw1_hash == pw2_hash
 
