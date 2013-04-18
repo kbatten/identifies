@@ -7,7 +7,7 @@ import json
 import time
 import logging
 
-from binascii import hexlify, unhexlify
+from binascii import unhexlify
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 
 from Crypto.PublicKey import RSA
@@ -205,22 +205,20 @@ def api_certkey():
     token = session.pop('token', None)
     if exp < int(time.time()):
         # login session expired
-        app.logger.debug('login session expired')
         return '', 401
     request_token = escape(request.form.get('token', None))
     if not request_token or token != request_token:
         # mismatch token
-        app.logger.debug('mismatch token %s != %s' % (request_token, token))
+        app.logger.info('mismatch token: %s' % email)
         return '', 401
     request_email = escape(request.form.get('email', None))
     if not get_user(email) or email != request_email:
         # no user logged in
         # or user not found
         # or current logged in email is not who made the request
-        app.logger.debug('no valid user found')
+        app.logger.debug('no valid user: %s, %s' % (email, request_email))
         return '', 401
     certificate = ''
-    app.logger.debug('/api/certkey <-- "%s"' % request.form)
     if 'pubkey' in request.form and 'duration' in request.form:
         pubkey = json.loads(request.form['pubkey'])
         # certificate time is in ms
@@ -239,19 +237,10 @@ def api_certkey():
     else:
         app.logger.warning('invalid request')
         if not 'pubkey' in request.form:
-            app.logger.debug('missing pubkey')
+            app.logger.debug('missing pubkey: %s' % email)
             app.logger.debug(request.form['pubkey[algorithm]'])
         if not 'duration' in request.form:
-            app.logger.debug('missing duration')
-    cert_parts = certificate.split('.')
-    if len(cert_parts) == 3:
-        app.logger.debug('/api/certkey <-> "%s"' %
-                         urlsafe_b64decode(cert_parts[0] + '=='))
-        app.logger.debug('/api/certkey <-> "%s"' %
-                         urlsafe_b64decode(cert_parts[1] + '=='))
-        app.logger.debug('/api/certkey <-> "%s"' %
-                         hexlify(urlsafe_b64decode(cert_parts[2] + '==')))
-    app.logger.debug('/api/certkey --> "%s"' % {'cert': certificate})
+            app.logger.debug('missing duration: %s' % email)
     return jsonify({'cert': certificate})
 
 
@@ -263,15 +252,11 @@ def api_login():
     email = escape(request.form.get('email', None))
     password = escape(request.form.get('password', None))
 
-    app.logger.debug({'email': email, 'password': password})
-
     if verify_or_create_user(email, password):
         session['email'] = email
         session['exp'] = int(time.time()) + LOGIN_EXPIRATION
         session['token'] = urlsafe_b64encode(getrandbytes(32))
         return jsonify({'token': session['token']})
-
-    app.logger.debug('password mismatch for email: %s' % email)
     return '', 401
 
 
