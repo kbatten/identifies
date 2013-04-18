@@ -12,9 +12,9 @@ navigator.id.beginAuthentication(function (email) {
     'use strict';
 
     $('#email').val(email);
-    $('#login').click(function () {
+    $('#login').click(function (r) {
         var password = $('#password').val();
-        $.post('/api/login', {email: email, password: password})
+        $.post('/api/login', {email: email, password: password, token: r.token})
             .success(function () {
                 navigator.id.completeAuthentication();
             });

@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<!-- This Source Code Form is subject to the terms of the Mozilla Public
-- License, v. 2.0. If a copy of the MPL was not distributed with this
-- file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
-
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <html>
 <head>
 <script type="text/javascript" src="https://login.persona.org/provisioning_api.js"></script>
@@ -11,14 +7,13 @@
 /*jslint browser: true */
 /*global navigator, $ */
 
-// begin provisioning! This both gives us indicated to browserid that we're
-// a well formed provisioning page and gives us the parameters of the provisioning
 navigator.id.beginProvisioning(function (email, cert_duration) {
     'use strict';
 
     navigator.id.genKeyPair(function (pubkey) {
         // try and certify key as email
         $.post('/api/certkey', {email: email,
+                                token: "{{ token }}",
                                 pubkey: pubkey,
                                 duration: cert_duration})
             .success(function (r) {

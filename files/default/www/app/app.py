@@ -15,7 +15,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Hash import SHA256
 from Crypto.Random.random import getrandbits
 
-from flask import Flask, request, jsonify, escape, session
+from flask import Flask, request, jsonify, escape, session, render_template
 from werkzeug.contrib.fixers import ProxyFix
 
 
@@ -62,27 +62,62 @@ TOKEN_EXPIRATION_MS = 10 * 1000  # 10s
 LOGIN_EXPIRATION = 60
 
 
+def getrandbits_str(k):
+    '''
+    get a string of randbits
+    '''
+    bits = getrandbits(k)
+    hex_bits = hex(bits)[2:].strip('L')
+    if len(hex_bits) % 2 == 1:
+        hex_bits = '0' + hex_bits
+    return hex_bits.decode('hex')
+
+
 def get_user(email):
     '''
     retrieve a user dict based on an email
     '''
     if not email:
-        return
+        return False
     userid = email.split('@')[0].split('+')[0]
     user = {'userid': userid, 'email': email}
 
     app.logger.debug(user)
 
     if userid == 'stan':
-        user.update({'password': ''})
+        user.update({'salt': getrandbits_str(256)})
+        user.update({'passhash': SHA256.new(user['salt'] +
+                                            'w'.encode('utf-8'))})
     elif userid == 'kyle':
-        user.update({'password': '1234'})
+        user.update({'salt': getrandbits_str(256)})
+        user.update({'passhash': SHA256.new(user['salt'] +
+                                            '1234'.encode('utf-8'))})
     elif userid == 'cartman':
-        user.update({'password': 'q'})
+        user.update({'salt': getrandbits_str(256)})
+        user.update({'passhash': SHA256.new(user['salt'] +
+                                            'q'.encode('utf-8'))})
     else:
         user = {}
 
     return user
+
+
+def verify_or_create_user(email, password):
+    '''
+    if user exists, verify the password
+    if user doesn't exist, create with password
+    '''
+    if not email or not password:
+        return False
+
+    user = get_user(email)
+    if not user:
+        return False
+
+    pw1_hash = user['passhash'].digest()
+    pw2_hash = SHA256.new(user['salt'] + password.encode('utf-8')).digest()
+
+    return pw1_hash == pw2_hash
 
 
 def jwcrypto_sign_json(payload, secret_key):
@@ -126,17 +161,25 @@ def api_certkey():
     '''
     certify the key by signing it with our private key
     '''
-    # pop the email, its only good for one cert request
+   # pop the email, its only good for one cert request
     email = session.pop('email', None)
     exp = int(session.pop('exp', 0))
+    token = session.pop('token', None)
     if exp < int(time.time()):
         # login session expired
+        app.logger.debug('login session expired')
+        return '', 401
+    request_token = escape(request.form.get('token', None))
+    if not request_token or token != request_token:
+        # mismatch token
+        app.logger.debug('mismatch token %s != %s' % (request_token, token))
         return '', 401
     request_email = escape(request.form.get('email', None))
     if not get_user(email) or email != request_email:
         # no user logged in
         # or user not found
         # or current logged in email is not who made the request
+        app.logger.debug('no valid user found')
         return '', 401
     certificate = ''
     app.logger.debug('/api/certkey <-- "%s"' % request.form)
@@ -184,20 +227,23 @@ def api_login():
 
     app.logger.debug({'email': email, 'password': password})
 
-    user = get_user(email)
-    if not user:
-        # no user logged in, or user not found
-        app.logger.debug('no user found for email: %s' % email)
-        return '', 401
-
-    if user['password'] == password:
+    if verify_or_create_user(email, password):
         session['email'] = email
         session['exp'] = int(time.time()) + LOGIN_EXPIRATION
-        return ''
+        session['token'] = urlsafe_b64encode(getrandbits_str(256))
+        return jsonify({'token': session['token']})
 
     app.logger.debug('password mismatch for email: %s' % email)
-
     return '', 401
+
+
+@app.route('/browserid/provision.html')
+def browserid_provision():
+    '''
+    provision needs the token
+    '''
+    token = session.get('token', None)
+    return render_template('provision.html', token=token)
 
 
 def debug_mode():
