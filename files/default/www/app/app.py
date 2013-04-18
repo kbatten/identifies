@@ -7,7 +7,7 @@ import json
 import time
 import logging
 
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 from base64 import urlsafe_b64encode, urlsafe_b64decode
 
 from Crypto.PublicKey import RSA
@@ -62,15 +62,15 @@ TOKEN_EXPIRATION_MS = 10 * 1000  # 10s
 LOGIN_EXPIRATION = 60
 
 
-def getrandbits_str(k):
+def getrandbytes(k):
     '''
-    get a string of randbits
+    get an ascii string of randbits
     '''
-    bits = getrandbits(k)
+    bits = getrandbits(k * 8)
     hex_bits = hex(bits)[2:].strip('L')
     if len(hex_bits) % 2 == 1:
         hex_bits = '0' + hex_bits
-    return hex_bits.decode('hex')
+    return unhexlify(hex_bits)
 
 
 ###############################
@@ -84,6 +84,15 @@ except IOError:
 except ValueError:
     pass
 ###############################
+
+
+def hash_password(salt, password):
+    '''
+    salt and hash the password
+    '''
+    saltpass = "".join([chr(ord(c)) for c in salt] +
+                       [chr(ord(c)) for c in password])
+    return SHA256.new(saltpass).digest()
 
 
 def get_user(email):
@@ -109,10 +118,10 @@ def create_user(email, password):
         return False
     userid = email.split('@')[0].split('+')[0]
 
-    salt = getrandbits_str(256).encode('string_escape')
-    salt_encode = urlsafe_b64encode(salt).encode('ascii')
-    passhash = SHA256.new(salt + password).digest()
-    passhash_encode = urlsafe_b64encode(passhash).encode('ascii')
+    salt = getrandbytes(32)
+    salt_encode = urlsafe_b64encode(salt)
+    passhash = hash_password(salt, password)
+    passhash_encode = urlsafe_b64encode(passhash)
     app.users[userid] = {'salt': salt_encode, 'passhash': passhash_encode}
 
     user = {
@@ -144,7 +153,7 @@ def verify_or_create_user(email, password):
 
     salt = urlsafe_b64decode(user['salt'].encode('ascii'))
     pw1_hash = urlsafe_b64decode(user['passhash'].encode('ascii'))
-    pw2_hash = SHA256.new(salt + password).digest()
+    pw2_hash = hash_password(salt, password)
 
     return pw1_hash == pw2_hash
 
@@ -259,7 +268,7 @@ def api_login():
     if verify_or_create_user(email, password):
         session['email'] = email
         session['exp'] = int(time.time()) + LOGIN_EXPIRATION
-        session['token'] = urlsafe_b64encode(getrandbits_str(256))
+        session['token'] = urlsafe_b64encode(getrandbytes(32))
         return jsonify({'token': session['token']})
 
     app.logger.debug('password mismatch for email: %s' % email)
