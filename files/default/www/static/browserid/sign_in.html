@@ -8,24 +8,25 @@
 /*jslint browser: true */
 /*global navigator, $ */
 
-navigator.id.beginAuthentication(function (userid) {
+navigator.id.beginAuthentication(function (email) {
     'use strict';
 
-    $.get('/api/whoami')
-        .success(function (who) {
-            if (userid === who.userid) {
+    $('#email').val(email);
+    $('#login').click(function () {
+        var password = $('#password').val();
+        $.post('/api/login', {email: email, password: password})
+            .success(function () {
                 navigator.id.completeAuthentication();
-            } else {
-                $.post('/api/loginasstan')
-                    .success(function () {
-                        navigator.id.completeAuthentication();
-                    });
-            }
-        });
+            });
+    });
 });
 </script>
 </head>
 <body>
-sign_in
+<form>
+<div>email<input id="email" type="text" size="30" disabled /></div>
+<div>password<input id="password" type="password" size="30" /></div>
+</form>
+<div id="login">login</div>
 </body>
 </html>
