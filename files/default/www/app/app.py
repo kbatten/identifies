@@ -200,18 +200,18 @@ def api_certkey():
     certify the key by signing it with our private key
     '''
    # pop the email, its only good for one cert request
-    email = session.pop('email', None)
+    email = session.pop('email', '')
     exp = int(session.pop('exp', 0))
-    token = session.pop('token', None)
+    token = session.pop('token', '')
     if exp < int(time.time()):
         # login session expired
         return '', 401
-    request_token = escape(request.form.get('token', None))
+    request_token = escape(request.form.get('token', ''))
     if not request_token or token != request_token:
         # mismatch token
         app.logger.info('mismatch token: %s' % email)
         return '', 401
-    request_email = escape(request.form.get('email', None))
+    request_email = escape(request.form.get('email', ''))
     if not get_user(email) or email != request_email:
         # no user logged in
         # or user not found
@@ -249,8 +249,8 @@ def api_login():
     '''
     log in as user
     '''
-    email = escape(request.form.get('email', None))
-    password = escape(request.form.get('password', None))
+    email = escape(request.form.get('email', ''))
+    password = escape(request.form.get('password', ''))
 
     if verify_or_create_user(email, password):
         session['email'] = email
@@ -265,7 +265,7 @@ def browserid_provision():
     '''
     provision needs the token
     '''
-    token = session.get('token', None)
+    token = session.get('token', '')
     return render_template('provision.html', token=token)
 
 
