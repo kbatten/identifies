@@ -28,6 +28,10 @@ nginx_site "000-default" do
   enable false
   notifies :restart, 'service[nginx]'
 end
+nginx_site "default" do
+  enable false
+  notifies :restart, 'service[nginx]'
+end
 
 # setup identifi.es
 # openssl rsa -in ssl.key -out /etc/nginx/conf/ssl.key
