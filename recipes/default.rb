@@ -76,7 +76,7 @@ end
 # gunicorn setup
 # create a config with the default values
 gunicorn_config "/etc/gunicorn/#{node[:identifies][:servername]}.py" do
-  listen "127.0.0.1:8000"
+  listen "127.0.0.1:node[:identifies][:app_port]"
   action :create
 end
 
