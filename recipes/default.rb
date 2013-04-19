@@ -93,7 +93,7 @@ end
 
 
 # supervisor setup, start the actual webapp
-supervisor_service "gunicorn_app_app" do
+supervisor_service "gunicorn_#{node[:identifies][:servername]}_app" do
   command "gunicorn app:app"
   directory "/var/www/#{node[:identifies][:servername]}/app"
   user node[:identifies][:user]
