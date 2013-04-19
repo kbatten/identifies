@@ -5,7 +5,6 @@
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 host="${1-ubuntu@identifi.es}"
-subrecipe="${2-default}"
 recipe="identifies"
 
 
@@ -39,4 +38,4 @@ done
 
 
 # https://github.com/kbatten/chef-deploy
-chef-deploy ${host} ${SCRIPTPATH} ${recipe} ${subrecipe} || exit 1
+chef-deploy ${host} ${SCRIPTPATH} ${recipe} || exit 1

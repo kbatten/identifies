@@ -34,7 +34,7 @@ def load_json_key(key_json, base):
     return key
 
 
-ISSUER = 'identifi.es'
+ISSUER = 'test.identifi.es'
 
 logging.basicConfig(level=logging.DEBUG)
 # pylint: disable-msg=C0103
