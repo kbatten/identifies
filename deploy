@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# ./deploy ubuntu@identifi.es default
+
+SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ -z ${1} ]] ; then
+    echo "./deploy <host> [subrecipe=default]"
+    exit 1
+fi
+
+host=${1}
+if [[ -z ${2} ]] ; then
+    subrecipe="default"
+else
+    subrecipe=${2}
+fi
+recipe="identifies"
+
+
+# go to top of the git repo
+cd $(git rev-parse --show-toplevel)
+
+# run pylint and pep8 on all py files
+# exit on any failure
+for file in $(find . -name "*.py") ; do
+    pushd $(dirname ${file})
+    echo "************************ $file ************************"
+    filepath=$(basename ${file})
+    r=0
+    pylint -i n -s n -r n ${filepath} 2>&1 | grep -v "No config file found, using default configuration"
+    if [[ ${PIPESTATUS#0} -ne 0 ]] ; then r=1; fi
+    pep8 ${filepath} 2>&1 | r=1
+    if [[ ${r} -ne 0 ]] ; then
+        exit ${r}
+    fi
+    popd
+done
+
+# run jslint on all html and js files
+# exit on any failure
+for file in $(find . -name "*.js" -o -name "*.html" | grep -v "/jquery.js$") ; do
+    pushd $(dirname ${file})
+    echo "************************ $file ************************"
+    jslint $(basename ${file}) || exit 1
+    popd
+done
+
+
+# https://github.com/kbatten/chef-deploy
+chef-deploy ${host} ${SCRIPTPATH} ${recipe} ${subrecipe} || exit 1
