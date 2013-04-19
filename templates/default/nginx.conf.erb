@@ -6,6 +6,9 @@ server {
   ssl_certificate /var/ssl/unified_<%= node[:identifies][:servername] %>.crt;
   ssl_certificate_key /var/ssl/<%= node[:identifies][:servername] %>.key;
 
+  ssl_prefer_server_ciphers on;
+  ssl_ciphers ECDHE-RSA-AES128-SHA256:AES128-GCM-SHA256:RC4:HIGH:!MD5:!aNULL:!EDH;
+
   server_name <%= node[:identifies][:servername] %>;
 
   access_log  /var/log/nginx/<%= node[:identifies][:servername] %>.access.log;
