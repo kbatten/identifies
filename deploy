@@ -4,17 +4,8 @@
 
 SCRIPTPATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ -z ${1} ]] ; then
-    echo "./deploy <host> [subrecipe=default]"
-    exit 1
-fi
-
-host=${1}
-if [[ -z ${2} ]] ; then
-    subrecipe="default"
-else
-    subrecipe=${2}
-fi
+host="${1-ubuntu@identifi.es}"
+subrecipe="${2-default}"
 recipe="identifies"
 
 
